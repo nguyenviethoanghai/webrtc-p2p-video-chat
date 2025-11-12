@@ -35,36 +35,50 @@ print(f"📂 Upload folder exists: {os.path.exists(upload_dir)}")
 # Database path for Render
 DATABASE_PATH = '/tmp/chat_app.db'
 
+def ensure_db_exists():
+    """Ensure database exists and is initialized"""
+    try:
+        # Check if database file exists
+        if not os.path.exists(DATABASE_PATH):
+            print(f"🔧 Database doesn't exist, creating: {DATABASE_PATH}")
+        
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        cursor = conn.cursor()
+        
+        # Create users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create messages table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER,
+                receiver_id INTEGER,
+                content TEXT,
+                message_type TEXT DEFAULT 'text',
+                file_path TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        print("✅ Database tables ensured")
+        return True
+    except Exception as e:
+        print(f"❌ Database initialization error: {str(e)}")
+        return False
+
 def init_db():
     """Initialize database tables"""
-    conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
-    cursor = conn.cursor()
-    
-    # Create users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create messages table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_id INTEGER,
-            receiver_id INTEGER,
-            content TEXT,
-            message_type TEXT DEFAULT 'text',
-            file_path TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    return ensure_db_exists()
 
 # Initialize database on startup
 print("🔍 Initializing database...")
@@ -108,6 +122,10 @@ def chat():
 @app.route('/api/register', methods=['POST'])
 def register_user():
     try:
+        # Ensure database exists
+        if not ensure_db_exists():
+            return jsonify({'error': 'Database initialization failed'}), 500
+            
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
@@ -139,11 +157,17 @@ def register_user():
             
     except Exception as e:
         print(f"❌ Register error: {str(e)}")
+        print(f"🔍 Database path: {DATABASE_PATH}")
+        print(f"🔍 Database exists: {os.path.exists(DATABASE_PATH)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login_user():
     try:
+        # Ensure database exists
+        if not ensure_db_exists():
+            return jsonify({'error': 'Database initialization failed'}), 500
+            
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
@@ -172,11 +196,17 @@ def login_user():
             
     except Exception as e:
         print(f"❌ Login error: {str(e)}")
+        print(f"🔍 Database path: {DATABASE_PATH}")
+        print(f"🔍 Database exists: {os.path.exists(DATABASE_PATH)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/users')
 def get_users():
     try:
+        # Ensure database exists
+        if not ensure_db_exists():
+            return jsonify({'error': 'Database initialization failed'}), 500
+            
         conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute('SELECT id, username FROM users')
@@ -204,6 +234,10 @@ def get_users():
 @app.route('/api/messages/<int:user1_id>/<int:user2_id>')
 def get_messages(user1_id, user2_id):
     try:
+        # Ensure database exists
+        if not ensure_db_exists():
+            return jsonify({'error': 'Database initialization failed'}), 500
+            
         conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute('''
@@ -320,6 +354,11 @@ def handle_join(data):
 
 @socketio.on('send_message')
 def handle_message(data):
+    # Ensure database exists
+    if not ensure_db_exists():
+        emit('error', {'message': 'Database not available'})
+        return
+        
     sender_id = data['sender_id']
     receiver_id = data['receiver_id']
     content = data['content']
