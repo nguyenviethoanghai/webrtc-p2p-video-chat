@@ -32,33 +32,25 @@ print(f"📄 Index.html exists: {os.path.exists(os.path.join(template_dir, 'inde
 print(f"📂 Upload folder exists: {os.path.exists(upload_dir)}")
 
 # Database initialization with password support
+# Database path for Render
+DATABASE_PATH = '/tmp/chat_app.db'
+
 def init_db():
-    conn = sqlite3.connect('messenger.db')
+    """Initialize database tables"""
+    conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
     cursor = conn.cursor()
     
-    # Check if users table exists and has password_hash column
-    cursor.execute("PRAGMA table_info(users)")
-    columns = [column[1] for column in cursor.fetchall()]
+    # Create users table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
-    if 'password_hash' not in columns:
-        # Migrate existing table or create new one
-        cursor.execute('DROP TABLE IF EXISTS users_old')
-        cursor.execute('ALTER TABLE users RENAME TO users_old')
-        
-        # Create new users table with password
-        cursor.execute('''
-            CREATE TABLE users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("🔄 Updated users table with password support")
-    else:
-        print("✅ Users table already has password support")
-    
-    # Messages table
+    # Create messages table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,14 +59,20 @@ def init_db():
             content TEXT,
             message_type TEXT DEFAULT 'text',
             file_path TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (sender_id) REFERENCES users (id),
-            FOREIGN KEY (receiver_id) REFERENCES users (id)
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
     conn.commit()
     conn.close()
+
+# Initialize database on startup
+print("🔍 Initializing database...")
+init_db()
+print("✅ Database ready")
+
+# Sửa tất cả sqlite3.connect thành:
+# conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
 
 def hash_password(password):
     """Hash password using SHA-256"""
