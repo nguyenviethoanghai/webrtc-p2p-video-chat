@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: webrtc-video-call-v2
+    # Replace with your GitHub repo URL, e.g. https://github.com/yourname/webrtc_p2p_video_call
+    repo: https://github.com/nguyenviethoanghai/webrtc-p2p-video-chat                                                                                                                 # <-- replace this
+    branch: main
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m flask run --host=0.0.0.0 --port=$PORT
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: FLASK_APP
+        value: app.py
+      - key: PORT
+        value: "10000"
+      - key: EXAMPLE_KEY
+        value: example_value
+      # Add other secrets here, e.g.:
+      # - key: SECRET_KEY
+      #   value: your_secret_value

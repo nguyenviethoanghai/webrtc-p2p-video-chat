@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Ứng dụng Nhắn tin</title>
+    <style>
+        :root {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: white;
+            --bg-sidebar: #667eea;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border-color: #e4e6ea;
+            --message-bg: white;
+            --message-own-bg: #667eea;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-sidebar: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --border-color: #4a5568;
+            --message-bg: #3a3a3a;
+            --message-own-bg: #667eea;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-sidebar);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .user-item:hover {
+            background: var(--bg-primary);
+        }
+
+        .user-item.active {
+            background: #e3f2fd;
+            border-left: 3px solid #667eea;
+        }
+
+        .user-item .notification-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .user-item .status-indicator {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .status-indicator.online {
+            background: #27ae60;
+        }
+
+        .status-indicator.offline {
+            background: #95a5a6;
+        }
+
+        .user-status-text {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .user-status-text.online {
+            color: #27ae60;
+        }
+
+        .user-status-text.offline {
+            color: #95a5a6;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header .status-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chat-header .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .chat-header .status-dot.online {
+            background: #27ae60;
+        }
+
+        .chat-header .status-dot.offline {
+            background: #95a5a6;
+        }
+
+        .chat-header .status-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .chat-actions button {
+            margin-left: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .chat-actions button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: var(--bg-primary);
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+        }
+
+        .message.own {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 18px;
+            background: var(--message-bg);
+            box-shadow: var(--shadow);
+        }
+
+        .message.own .message-content {
+            background: var(--message-own-bg);
+            color: white;
+        }
+
+        .message-input-area {
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .send-btn, .file-btn, .emoji-btn {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 70px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .emoji-picker.show {
+            display: block;
+        }
+
+        .emoji-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .emoji-categories {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .emoji-category {
+            padding: 0.5rem;
+            border: none;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .emoji-category:hover,
+        .emoji-category.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.5rem;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .emoji-item {
+            padding: 0.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .emoji-item:hover {
+            background: var(--bg-primary);
+            transform: scale(1.1);
+        }
+
+        .emoji-search {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+        }
+
+        .notification-body {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .video-call-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .video-container {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 15px;
+            overflow: hidden;
+            max-width: 90vw;
+            max-height: 90vh;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        #remoteVideo {
+            width: 800px;
+            height: 600px;
+            background: #000;
+            object-fit: cover;
+        }
+
+        #localVideo {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            border-radius: 10px;
+            z-index: 1001;
+            border: 3px solid white;
+            background: #333;
+            object-fit: cover;
+        }
+
+        .call-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 25px;
+        }
+
+        .call-controls button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .end-call {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .end-call:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+
+        .call-status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .permission-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .permission-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            margin: 20px;
+            color: var(--text-primary);
+        }
+
+        .permission-content h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .permission-content p {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .permission-content button {
+            margin: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-allow {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .empty-users {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .file-message {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin-top: 0.5rem;
+        }
+
+        .file-icon {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .image-message {
+            margin-top: 0.5rem;
+        }
+
+        .image-message img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: block;
+        }
+
+        .image-message img:hover {
+            transform: scale(1.02);
+        }
+
+        .file-download {
+            color: inherit;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .file-download:hover {
+            text-decoration: underline;
+        }
+
+        .image-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            cursor: pointer;
+        }
+
+        .image-overlay img {
+            max-width: 95%;
+            max-height: 95%;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.3);
+        }
+
+        .overlay-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        .overlay-close:hover {
+            color: #ccc;
+        }
+
+        .loading-image {
+            background: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="user-info">
+                <h3 id="currentUser">Xin chào!</h3>
+            </div>
+            <div class="header-controls">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Chuyển đổi chế độ">
+                    🌙
+                </button>
+                <button class="logout-btn" onclick="logout()" title="Đăng xuất">
+                    🚪 Đăng xuất
+                </button>
+            </div>
+        </div>
+        
+        <div class="user-list" id="userList">
+            <div class="empty-users">
+                <h4>👥 Chưa có người dùng khác</h4>
+                <p>Mở tab ẩn danh (Ctrl+Shift+N) và đăng ký tên khác để test chat</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-area">
+        <div class="chat-header">
+            <div>
+                <h3 id="chatWith">Chọn người để chat</h3>
+                <div class="status-info" id="statusInfo" style="display: none;">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span class="status-text" id="statusText"></span>
+                </div>
+            </div>
+            <div class="chat-actions">
+                <button onclick="startVideoCall()" id="videoCallBtn" disabled>📹 Gọi video</button>
+            </div>
+        </div>
+        <div class="messages" id="messages">
+            <div style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">
+                <h3>👋 Chào mừng!</h3>
+                <p>Chọn một người để bắt đầu chat</p>
+            </div>
+        </div>
+        <div class="message-input-area">
+            <input type="file" id="fileInput" accept="*/*" onchange="sendFile()">
+            <button class="file-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+            <button class="emoji-btn" onclick="toggleEmojiPicker()">😀</button>
+            <input type="text" class="message-input" id="messageInput" placeholder="Nhập tin nhắn..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+            
+            <!-- Emoji Picker -->
+            <div class="emoji-picker" id="emojiPicker">
+                <div class="emoji-header">
+                    <span style="font-weight: bold;">Chọn emoji</span>
+                    <button onclick="hideEmojiPicker()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-primary);">&times;</button>
+                </div>
+                
+                <input type="text" class="emoji-search" id="emojiSearch" placeholder="Tìm emoji..." onkeyup="searchEmojis()">
+                
+                <div class="emoji-categories">
+                    <button class="emoji-category active" onclick="showEmojiCategory('smileys')">😀</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('people')">👤</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('nature')">🌱</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('food')">🍎</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('activities')">⚽</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('travel')">🚗</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('objects')">💡</button>
+                    <button class="emoji-category" onclick="showEmojiCategory('symbols')">❤️</button>
+                </div>
+                
+                <div class="emoji-grid" id="emojiGrid">
+                    <!-- Emojis will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification" id="notification">
+        <div class="notification-header">
+            <div class="notification-title" id="notificationTitle">Tin nhắn mới</div>
+            <button class="notification-close" onclick="hideNotification()">&times;</button>
+        </div>
+        <div class="notification-body" id="notificationBody"></div>
+    </div>
+
+    <!-- ...existing modals... -->
+    <div class="video-call-modal" id="videoCallModal">
+        <div class="video-container">
+            <div class="call-status" id="callStatus">Đang kết nối...</div>
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="call-controls">
+                <button class="end-call" onclick="endCall()" title="Kết thúc cuộc gọi">📞</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="permission-modal" id="permissionModal">
+        <div class="permission-content">
+            <h3>🎥 Quyền truy cập Camera & Microphone</h3>
+            <p>Để thực hiện cuộc gọi video, ứng dụng cần quyền truy cập camera và microphone của bạn.</p>
+            <p>Vui lòng cho phép khi trình duyệt hỏi, hoặc kiểm tra cài đặt quyền trong trình duyệt.</p>
+            <button class="btn-allow" onclick="requestPermissionAndCall()">🔓 Cho phép & Gọi</button>
+            <button class="btn-cancel" onclick="closePermissionModal()">❌ Hủy</button>
+        </div>
+    </div>
+
+    <div class="image-overlay" id="imageOverlay" onclick="closeImageOverlay()">
+        <span class="overlay-close" onclick="closeImageOverlay()">&times;</span>
+        <img id="overlayImage" src="" alt="Full size image" onclick="event.stopPropagation()">
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentUserId = localStorage.getItem('user_id');
+        let currentUsername = localStorage.getItem('username');
+        let selectedUserId = null;
+        let selectedUsername = '';
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+
+        const configuration = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
+
+        if (!currentUserId) {
+            window.location.href = '/';
+        }
+
+        document.getElementById('currentUser').textContent = `Xin chào, ${currentUsername}!`;
+
+        // ==================== DARK MODE ====================
+        function toggleTheme() {
+            const body = document.body;
+            const themeBtn = document.querySelector('.theme-toggle');
+            
+            if (body.dataset.theme === 'dark') {
+                body.dataset.theme = 'light';
+                themeBtn.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.dataset.theme = 'dark';
+                themeBtn.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+            
+            console.log('🎨 Theme switched to:', body.dataset.theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.dataset.theme = savedTheme;
+            const themeBtn = document.querySelector('.theme-toggle');
+            themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // ==================== NOTIFICATION SYSTEM ====================
+        let notificationSound = null;
+        let unreadMessages = {};
+        let isPageVisible = true;
+        let audioInitialized = false;
+
+        function initNotificationSound() {
+            if (audioInitialized) return;
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                function createBeep() {
+                    try {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                        
+                        console.log('🔊 Notification sound played');
+                    } catch (error) {
+                        console.log('Audio playback error:', error);
+                    }
+                }
+                
+                notificationSound = createBeep;
+                audioInitialized = true;
+                console.log('✅ Notification sound initialized');
+            } catch (error) {
+                console.log('Audio context not available:', error);
+            }
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('✅ Browser notification permission granted');
+                    }
+                });
+            }
+        }
+
+        function showBrowserNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted' && !isPageVisible) {
+                const notification = new Notification(title, {
+                    body: body,
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiM2NjdlZWEiLz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5URVNUIEJNQUDFPC90ZXh0Pgo8L3N2Zz4=',
+                    tag: 'chat-message',
+                    requireInteraction: false
+                });
+
+                setTimeout(() => notification.close(), 5000);
+                notification.onclick = () => {
+                    window.focus();
+                    notification.close();
+                };
+            }
+        }
+
+        function showInAppNotification(title, body) {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notificationTitle');
+            const notificationBody = document.getElementById('notificationBody');
+
+            notificationTitle.textContent = title;
+            notificationBody.textContent = body;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                hideNotification();
+            }, 4000);
+        }
+
+        function hideNotification() {
+            document.getElementById('notification').classList.remove('show');
+        }
+
+        function playNotificationSound() {
+            if (notificationSound) {
+                try {
+                    notificationSound();
+                } catch (error) {
+                    console.log('Could not play sound:', error);
+                }
+            } else {
+                initNotificationSound();
+            }
+        }
+
+        function updateUnreadCount(userId, increment = true) {
+            if (!unreadMessages[userId]) {
+                unreadMessages[userId] = 0;
+            }
+
+            if (increment) {
+                unreadMessages[userId]++;
+            } else {
+                unreadMessages[userId] = 0;
+            }
+
+            updateUserListBadges();
+            updatePageTitle();
+        }
+
+        function updateUserListBadges() {
+            document.querySelectorAll('.user-item').forEach(item => {
+                const userId = parseInt(item.dataset.userId);
+                const existingBadge = item.querySelector('.notification-badge');
+                
+                if (existingBadge) {
+                    existingBadge.remove();
+                }
+
+                if (unreadMessages[userId] && unreadMessages[userId] > 0) {
+                    const badge = document.createElement('div');
+                    badge.className = 'notification-badge';
+                    badge.textContent = unreadMessages[userId] > 9 ? '9+' : unreadMessages[userId];
+                    item.appendChild(badge);
+                }
+            });
+        }
+
+        function updatePageTitle() {
+            const totalUnread = Object.values(unreadMessages).reduce((sum, count) => sum + count, 0);
+            
+            if (totalUnread > 0) {
+                document.title = `(${totalUnread}) Chat - Ứng dụng Nhắn tin`;
+            } else {
+                document.title = 'Chat - Ứng dụng Nhắn tin';
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            isPageVisible = !document.hidden;
+            if (isPageVisible && selectedUserId) {
+                updateUnreadCount(selectedUserId, false);
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            isPageVisible = true;
+            if (selectedUserId) {
+                updateUnreadCount(selectedUserId, false);
+            }
+        });
+
+        window.addEventListener('blur', () => {
+            isPageVisible = false;
+        });
+
+        // ==================== EMOJI PICKER ====================
+        const emojiData = {
+            smileys: [
+                '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣',
+                '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
+                '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜',
+                '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
+                '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
+                '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠'
+            ],
+            people: [
+                '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
+                '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+                '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜',
+                '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅'
+            ],
+            nature: [
+                '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+                '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵',
+                '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤'
+            ],
+            food: [
+                '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓',
+                '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝'
+            ],
+            activities: [
+                '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉',
+                '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍'
+            ],
+            travel: [
+                '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
+                '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵'
+            ],
+            objects: [
+                '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️',
+                '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼'
+            ],
+            symbols: [
+                '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+                '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖'
+            ]
+        };
+
+        let currentEmojiCategory = 'smileys';
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            if (picker.classList.contains('show')) {
+                hideEmojiPicker();
+            } else {
+                showEmojiPicker();
+            }
+        }
+
+        function showEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.classList.add('show');
+            showEmojiCategory('smileys');
+            
+            setTimeout(() => {
+                document.addEventListener('click', handleEmojiPickerOutsideClick);
+            }, 100);
+        }
+
+        function hideEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.classList.remove('show');
+            document.removeEventListener('click', handleEmojiPickerOutsideClick);
+        }
+
+        function handleEmojiPickerOutsideClick(event) {
+            const picker = document.getElementById('emojiPicker');
+            const emojiBtn = document.querySelector('.emoji-btn');
+            
+            if (!picker.contains(event.target) && event.target !== emojiBtn) {
+                hideEmojiPicker();
+            }
+        }
+
+        function showEmojiCategory(category) {
+            currentEmojiCategory = category;
+            
+            document.querySelectorAll('.emoji-category').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.getElementById('emojiSearch').value = '';
+            displayEmojis(emojiData[category]);
+        }
+
+        function displayEmojis(emojis) {
+            const grid = document.getElementById('emojiGrid');
+            grid.innerHTML = '';
+            
+            emojis.forEach(emoji => {
+                const button = document.createElement('button');
+                button.className = 'emoji-item';
+                button.textContent = emoji;
+                button.onclick = () => insertEmoji(emoji);
+                button.title = emoji;
+                grid.appendChild(button);
+            });
+        }
+
+        function insertEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            
+            const newText = text.substring(0, start) + emoji + text.substring(end);
+            input.value = newText;
+            
+            const newCursorPos = start + emoji.length;
+            input.setSelectionRange(newCursorPos, newCursorPos);
+            
+            input.focus();
+            hideEmojiPicker();
+        }
+
+        function searchEmojis() {
+            const searchTerm = document.getElementById('emojiSearch').value.toLowerCase();
+            
+            if (!searchTerm) {
+                displayEmojis(emojiData[currentEmojiCategory]);
+                return;
+            }
+            
+            const allEmojis = Object.values(emojiData).flat();
+            const emojiNames = {
+                '😀': 'smile happy grin',
+                '😂': 'laugh tears joy',
+                '❤️': 'heart love red',
+                '👍': 'thumbs up good',
+                '🔥': 'fire hot'
+            };
+            
+            const filteredEmojis = allEmojis.filter(emoji => {
+                const name = emojiNames[emoji] || '';
+                return name.includes(searchTerm);
+            });
+            
+            displayEmojis(filteredEmojis.length > 0 ? filteredEmojis : allEmojis.slice(0, 32));
+        }
+
+        function convertEmojiShortcuts(text) {
+            const shortcuts = {
+                ':)': '😊', ':-)': '😊', ':(': '😞', ':-(': '😞',
+                ':D': '😃', ':-D': '😃', ':P': '😛', ':-P': '😛',
+                ';)': '😉', ';-)': '😉', '<3': '❤️', '</3': '💔',
+                ':fire:': '🔥', ':100:': '💯', ':heart:': '❤️'
+            };
+            
+            let convertedText = text;
+            Object.keys(shortcuts).forEach(shortcut => {
+                const regex = new RegExp(shortcut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                convertedText = convertedText.replace(regex, shortcuts[shortcut]);
+            });
+            
+            return convertedText;
+        }
+
+        // ==================== SOCKET EVENTS ====================
+        socket.on('connect', () => {
+            socket.emit('join', { user_id: parseInt(currentUserId) });
+        });
+
+        socket.on('new_message', (message) => {
+            console.log('📩 New message received:', message);
+            
+            const isCurrentChat = (message.sender_id == selectedUserId && message.receiver_id == currentUserId) ||
+                                  (message.sender_id == currentUserId && message.receiver_id == selectedUserId);
+            
+            if (isCurrentChat) {
+                displayMessage(message);
+                
+                if (message.sender_id != currentUserId) {
+                    playNotificationSound();
+                    
+                    if (!isPageVisible) {
+                        updateUnreadCount(message.sender_id, true);
+                        
+                        const senderName = message.sender_name || selectedUsername || `User ${message.sender_id}`;
+                        let messagePreview = message.content || '';
+                        
+                        if (message.message_type === 'file') {
+                            messagePreview = message.file_path && message.file_path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) 
+                                ? '📷 Đã gửi một hình ảnh' 
+                                : '📎 Đã gửi một file';
+                        }
+
+                        if (messagePreview.length > 50) {
+                            messagePreview = messagePreview.substring(0, 50) + '...';
+                        }
+
+                        showBrowserNotification(`💬 ${senderName}`, messagePreview);
+                    }
+                }
+            } 
+            else if (message.receiver_id == currentUserId) {
+                const senderName = message.sender_name || `User ${message.sender_id}`;
+                let messagePreview = message.content || '';
+                
+                if (message.message_type === 'file') {
+                    messagePreview = message.file_path && message.file_path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) 
+                        ? '📷 Đã gửi một hình ảnh' 
+                        : '📎 Đã gửi một file';
+                }
+
+                if (messagePreview.length > 50) {
+                    messagePreview = messagePreview.substring(0, 50) + '...';
+                }
+
+                updateUnreadCount(message.sender_id, true);
+                playNotificationSound();
+                showBrowserNotification(`💬 ${senderName}`, messagePreview);
+                showInAppNotification(`💬 Tin nhắn mới từ ${senderName}`, messagePreview);
+            }
+        });
+
+        socket.on('incoming_call', (data) => {
+            const acceptCall = confirm(`
+📞 ${data.caller_name} đang gọi video cho bạn
+
+⚠️ Lưu ý: Camera/Mic cần quyền truy cập
+Đảm bảo cho phép khi trình duyệt hỏi
+
+Chấp nhận cuộc gọi?
+            `);
+            
+            if (acceptCall) {
+                socket.emit('call_accepted', { caller_id: data.caller_id, receiver_id: currentUserId });
+                
+                // Try to start call
+                if (!localStream) {
+                    requestPermissionAndCall().then(() => {
+                        initiateCall(false);
+                    }).catch(() => {
+                        // If failed, ask for demo
+                        if (confirm('Không thể truy cập camera. Dùng Demo Video Call để test?')) {
+                            simulateVideoCall();
+                        } else {
+                            socket.emit('call_rejected', { caller_id: data.caller_id, receiver_id: currentUserId });
+                        }
+                    });
+                } else {
+                    initiateCall(false);
+                }
+            } else {
+                socket.emit('call_rejected', { caller_id: data.caller_id, receiver_id: currentUserId });
+            }
+        });
+
+        socket.on('call_accepted', () => {
+            document.getElementById('callStatus').textContent = 'Cuộc gọi được chấp nhận';
+        });
+
+        socket.on('call_rejected', () => {
+            endCall();
+            alert(`
+❌ ${selectedUsername} đã từ chối cuộc gọi
+
+💡 Lý do có thể:
+• Không cho phép quyền Camera/Microphone
+• Trình duyệt không hỗ trợ (cần Chrome/Firefox)
+• Cần HTTPS thay vì HTTP
+• Camera đang được dùng bởi ứng dụng khác
+
+🔧 Giải pháp:
+• Thử "Demo Video Call" để test giao diện
+• Sử dụng localhost (127.0.0.1:5001)
+• Deploy lên HTTPS để test thật
+            `);
+        });
+
+        socket.on('offer', async (data) => {
+            if (!peerConnection) return;
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('answer', answer);
+        });
+
+        socket.on('answer', async (data) => {
+            if (!peerConnection) return;
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+        });
+
+        socket.on('ice-candidate', async (data) => {
+            if (!peerConnection) return;
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+        });
+
+        // ==================== STATUS TRACKING ====================
+        let userStatuses = {};
+
+        function formatTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'Vừa xem';
+            if (minutes < 60) return `${minutes} phút trước`;
+            if (hours < 24) return `${hours} giờ trước`;
+            if (days < 7) return `${days} ngày trước`;
+            return date.toLocaleDateString('vi-VN');
+        }
+
+        function updateUserStatus(userId, status, lastSeen) {
+            userStatuses[userId] = { status, lastSeen };
+            
+            const userItem = document.querySelector(`[data-user-id="${userId}"]`);
+            if (userItem) {
+                const statusIndicator = userItem.querySelector('.status-indicator');
+                const statusText = userItem.querySelector('.user-status-text');
+                
+                if (statusIndicator) {
+                    statusIndicator.className = `status-indicator ${status}`;
+                }
+                
+                if (statusText) {
+                    if (status === 'online') {
+                        statusText.textContent = 'Đang hoạt động';
+                        statusText.className = 'user-status-text online';
+                    } else {
+                        statusText.textContent = formatTimeAgo(lastSeen);
+                        statusText.className = 'user-status-text offline';
+                    }
+                }
+            }
+            
+            if (selectedUserId == userId) {
+                updateChatHeaderStatus(status, lastSeen);
+            }
+        }
+
+        function updateChatHeaderStatus(status, lastSeen) {
+            const statusInfo = document.getElementById('statusInfo');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            statusInfo.style.display = 'flex';
+            statusDot.className = `status-dot ${status}`;
+            
+            if (status === 'online') {
+                statusText.textContent = 'Đang hoạt động';
+            } else {
+                statusText.textContent = 'Hoạt động ' + formatTimeAgo(lastSeen);
+            }
+        }
+
+        // Socket event for user status changes
+        socket.on('user_status_changed', (data) => {
+            console.log('👤 User status changed:', data);
+            updateUserStatus(data.user_id, data.status, data.last_seen);
+        });
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const users = await response.json();
+                const userList = document.getElementById('userList');
+                
+                const otherUsers = users.filter(user => user.id != currentUserId);
+                
+                if (otherUsers.length === 0) {
+                    userList.innerHTML = `
+                        <div class="empty-users">
+                            <h4>👥 Chưa có người dùng khác</h4>
+                            <p>Mở tab ẩn danh và đăng ký tên khác để test chat</p>
+                            <br>
+                            <small>💡 Hoặc chia sẻ link với bạn bè để chat cùng!</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                userList.innerHTML = '';
+                otherUsers.forEach(user => {
+                    userStatuses[user.id] = {
+                        status: user.status,
+                        lastSeen: user.last_seen
+                    };
+                    
+                    const userItem = document.createElement('div');
+                    userItem.className = 'user-item';
+                    userItem.dataset.userId = user.id;
+                    
+                    const statusText = user.status === 'online' 
+                        ? 'Đang hoạt động' 
+                        : formatTimeAgo(user.last_seen);
+                    
+                    userItem.innerHTML = `
+                        <div style="display: flex; align-items: center; position: relative; width: 100%;">
+                            <div style="width: 40px; height: 40px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 12px;">
+                                ${user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div style="flex: 1;">
+                                <strong>${user.username}</strong>
+                                <br>
+                                <div class="user-status-text ${user.status}">${statusText}</div>
+                            </div>
+                            <div class="status-indicator ${user.status}"></div>
+                        </div>
+                    `;
+                    userItem.onclick = () => selectUser(user.id, user.username, userItem);
+                    userList.appendChild(userItem);
+                });
+
+                updateUserListBadges();
+            } catch (error) {
+                console.error('Lỗi tải users:', error);
+            }
+        }
+
+        function selectUser(userId, username, element) {
+            selectedUserId = userId;
+            selectedUsername = username;
+            
+            updateUnreadCount(userId, false);
+            
+            const userStatus = userStatuses[userId];
+            if (userStatus) {
+                updateChatHeaderStatus(userStatus.status, userStatus.lastSeen);
+            }
+            
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '';
+            
+            document.querySelectorAll('.user-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('chatWith').textContent = `Chat với ${username}`;
+            document.getElementById('videoCallBtn').disabled = false;
+            
+            loadMessages();
+        }
+
+        function logout() {
+            const confirmLogout = confirm(`
+🚪 Bạn có chắc muốn đăng xuất?
+
+Bạn sẽ được chuyển về trang đăng nhập.
+            `);
+            
+            if (confirmLogout) {
+                // Disconnect socket
+                if (socket && socket.connected) {
+                    socket.disconnect();
+                }
+                
+                // End any ongoing call
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+                
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+                
+                // Clear local storage
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                
+                // Show logout message
+                alert('✅ Đã đăng xuất thành công!');
+                
+                // Redirect to login page
+                window.location.href = '/';
+            }
+        }
+
+        async function loadMessages() {
+            if (!selectedUserId) return;
+            
+            try {
+                const response = await fetch(`/api/messages/${currentUserId}/${selectedUserId}`);
+                const messages = await response.json();
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+
+                if (messages.length === 0) {
+                    messagesDiv.innerHTML = `
+                        <div style="text-align: center; color: #666; margin-top: 2rem;">
+                            <h4>💬 Bắt đầu cuộc trò chuyện</h4>
+                            <p>Gửi tin nhắn đầu tiên cho ${selectedUsername}!</p>
+                        </div>
+                    `;
+                } else {
+                    messages.forEach(message => {
+                        displayMessage(message);
+                    });
+                }
+
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (error) {
+                console.error('Lỗi tải tin nhắn:', error);
+            }
+        }
+
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            
+            // Remove welcome message if exists
+            const welcomeMsg = messagesDiv.querySelector('div[style*="text-align: center"]');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.sender_id == currentUserId ? 'own' : ''}`;
+            
+            let content = '';
+            if (message.message_type === 'file' && message.file_path) {
+                console.log('📁 Displaying file:', message.file_path);
+                
+                // Check if it's an image
+                if (message.file_path.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+                    const imageUrl = `/uploads/${message.file_path}`;
+                    console.log('🖼️ Image URL:', imageUrl);
+                    
+                    content = `
+                        <div class="image-message">
+                            <img src="${imageUrl}" 
+                                 alt="${message.content}" 
+                                 onclick="showImageOverlay('${imageUrl}')"
+                                 onload="console.log('✅ Image loaded:', this.src)"
+                                 onerror="console.error('❌ Image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="display: none;" class="file-message">
+                                <span class="file-icon">🖼️</span>
+                                <a href="${imageUrl}" target="_blank" class="file-download">
+                                    ${message.content} (Không thể hiển thị ảnh)
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Other file types
+                    let fileIcon = '📎';
+                    if (message.file_path.match(/\.(pdf)$/i)) fileIcon = '📄';
+                    else if (message.file_path.match(/\.(doc|docx)$/i)) fileIcon = '📝';
+                    else if (message.file_path.match(/\.(mp4|avi|mov)$/i)) fileIcon = '🎥';
+                    else if (message.file_path.match(/\.(mp3|wav)$/i)) fileIcon = '🎵';
+                    else if (message.file_path.match(/\.(zip|rar)$/i)) fileIcon = '🗂️';
+                    
+                    content = `
+                        <div class="file-message">
+                            <span class="file-icon">${fileIcon}</span>
+                            <a href="/uploads/${message.file_path}" target="_blank" class="file-download">
+                                ${message.content}
+                            </a>
+                        </div>
+                    `;
+                }
+            } else {
+                content = message.content;
+            }
+            
+            messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file || !selectedUserId) {
+                console.log('❌ No file selected or no user selected');
+                return;
+            }
+            
+            // Validate file size (max 16MB as per server config)
+            if (file.size > 16 * 1024 * 1024) {
+                alert('File quá lớn! Tối đa 16MB.');
+                fileInput.value = '';
+                return;
+            }
+            
+            console.log('📤 Uploading file:', file.name, 'Size:', (file.size/1024/1024).toFixed(2) + 'MB');
+            
+            // Show uploading status
+            const messagesDiv = document.getElementById('messages');
+            const uploadingMsg = document.createElement('div');
+            uploadingMsg.className = `message own`;
+            uploadingMsg.innerHTML = `
+                <div class="message-content">
+                    <div class="loading-image">
+                        📤 Đang tải lên "${file.name}" (${(file.size/1024/1024).toFixed(2)}MB)...
+                    </div>
+                </div>
+            `;
+            messagesDiv.appendChild(uploadingMsg);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('📥 Upload response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📥 Upload response data:', data);
+                
+                // Remove uploading message
+                uploadingMsg.remove();
+                
+                if (data.file_path) {
+                    console.log('✅ File uploaded successfully:', data.file_path);
+                    
+                    // Display file immediately for sender
+                    const newMessage = {
+                        sender_id: parseInt(currentUserId),
+                        receiver_id: selectedUserId,
+                        content: file.name,
+                        message_type: 'file',
+                        file_path: data.file_path,
+                        created_at: new Date().toISOString()
+                    };
+                    displayMessage(newMessage);
+                    
+                    socket.emit('send_message', {
+                        sender_id: parseInt(currentUserId),
+                        receiver_id: selectedUserId,
+                        content: file.name,
+                        message_type: 'file',
+                        file_path: data.file_path
+                    });
+                } else {
+                    throw new Error('No file_path in response');
+                }
+            } catch (error) {
+                uploadingMsg.remove();
+                console.error('❌ Upload error:', error);
+                
+                let errorMessage = 'Lỗi upload file: ';
+                if (error.message.includes('400')) {
+                    errorMessage += 'Yêu cầu không hợp lệ. Kiểm tra định dạng file.';
+                } else if (error.message.includes('413')) {
+                    errorMessage += 'File quá lớn (max 16MB).';
+                } else if (error.message.includes('500')) {
+                    errorMessage += 'Lỗi server. Thử lại sau.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                alert(errorMessage);
+            }
+            
+            fileInput.value = '';
+        }
+
+        // Handle escape key to close image overlay
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageOverlay();
+            }
+        });
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function startVideoCall(isCaller = true) {
+            if (!selectedUserId) {
+                alert('Vui lòng chọn người để gọi');
+                return;
+            }
+            
+            // Check if same user (testing on same machine)
+            if (selectedUsername === currentUsername) {
+                alert('Không thể gọi chính mình! Hãy chọn user khác.');
+                return;
+            }
+            
+            // Show instruction for testing
+            const shouldProceed = confirm(`
+🎥 Bắt đầu cuộc gọi video với ${selectedUsername}?
+
+💡 Lưu ý: Cần quyền truy cập Camera và Microphone
+            `);
+            
+            if (!shouldProceed) return;
+            
+            // Show permission modal first
+            if (!localStream) {
+                document.getElementById('permissionModal').style.display = 'flex';
+                return;
+            }
+            
+            initiateCall(isCaller);
+        }
+
+        function closePermissionModal() {
+            document.getElementById('permissionModal').style.display = 'none';
+        }
+
+        async function requestPermissionAndCall() {
+            const permissionModal = document.getElementById('permissionModal');
+            const callStatus = document.getElementById('callStatus');
+            
+            try {
+                permissionModal.style.display = 'none';
+                callStatus.textContent = 'Đang xin quyền truy cập...';
+                document.getElementById('videoCallModal').style.display = 'flex';
+                
+                // Check if we're on HTTP (localhost exception)
+                const isLocalhost = window.location.hostname === 'localhost' || 
+                                   window.location.hostname === '127.0.0.1' ||
+                                   window.location.hostname.startsWith('192.168.') ||
+                                   window.location.hostname.startsWith('10.') ||
+                                   window.location.hostname.startsWith('172.');
+                
+                if (!isLocalhost && window.location.protocol === 'http:') {
+                    throw new Error('Camera/Microphone chỉ hoạt động với HTTPS hoặc localhost');
+                }
+                
+                // Try to get media with better error handling
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280, max: 1920 }, 
+                        height: { ideal: 720, max: 1080 },
+                        facingMode: 'user'
+                    }, 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                document.getElementById('localVideo').srcObject = localStream;
+                callStatus.textContent = 'Camera đã sẵn sàng!';
+                
+                initiateCall(true);
+                
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                document.getElementById('videoCallModal').style.display = 'none';
+                
+                alert(`Lỗi camera: ${error.message}\nThử lại sau hoặc kiểm tra quyền trình duyệt.`);
+            }
+        }
+
+        async function initiateCall(isCaller) {
+            const callStatus = document.getElementById('callStatus');
+            
+            if (isCaller) {
+                callStatus.textContent = 'Đang gọi ' + selectedUsername + '...';
+                
+                socket.emit('call_user', {
+                    caller_id: parseInt(currentUserId),
+                    caller_name: currentUsername,
+                    receiver_id: selectedUserId
+                });
+            } else {
+                callStatus.textContent = 'Đang kết nối...';
+            }
+
+            setupPeerConnection();
+            
+            if (isCaller) {
+                try {
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    socket.emit('offer', offer);
+                    callStatus.textContent = 'Đang chờ phản hồi...';
+                } catch (error) {
+                    console.error('Error creating offer:', error);
+                    callStatus.textContent = 'Lỗi kết nối';
+                }
+            }
+        }
+
+        function setupPeerConnection() {
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+            
+            peerConnection.ontrack = (event) => {
+                remoteStream = event.streams[0];
+                document.getElementById('remoteVideo').srcObject = remoteStream;
+                document.getElementById('callStatus').textContent = 'Đã kết nối';
+                
+                // Hide status after 3 seconds
+                setTimeout(() => {
+                    const status = document.getElementById('callStatus');
+                    if (status.textContent === 'Đã kết nối') {
+                        status.style.opacity = 0;
+                        setTimeout(() => { status.style.display = 'none'; }, 3000);
+                    }
+                }, 3000);
+            };
+            
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', event.candidate);
+                }
+            };
+        }
+
+        function endCall() {
+            socket.emit('end_call', { 
+                user_id: currentUserId, 
+                partner_id: selectedUserId 
+            });
+            
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            document.getElementById('videoCallModal').style.display = 'none';
+        }
+
+        function showImageOverlay(imageSrc) {
+            console.log('🖼️ Opening image overlay:', imageSrc);
+            const overlay = document.getElementById('imageOverlay');
+            const overlayImg = document.getElementById('overlayImage');
+            
+            overlayImg.src = imageSrc;
+            overlay.style.display = 'flex';
+        }
+
+        function closeImageOverlay() {
+            console.log('❌ Closing image overlay');
+            const overlay = document.getElementById('imageOverlay');
+            overlay.style.display = 'none';
+        }
+
+        // ==================== TEST FUNCTIONS ====================
+        function testAllFeatures() {
+            console.log('🧪 Testing all features...');
+            
+            toggleTheme();
+            
+            showInAppNotification('🧪 Test All Features', 'Dark mode, notifications, emoji, status - all working!');
+            
+            const input = document.getElementById('messageInput');
+            input.value = 'Testing :) :fire: :100: <3';
+            
+            if (document.querySelector('.user-item')) {
+                updateUnreadCount(1, true);
+            }
+            
+            playNotificationSound();
+            testStatus();
+        }
+
+        // Test function to check status
+        function testStatus() {
+            console.log('👤 Testing user status...');
+            console.log('Connected users:', Object.keys(userStatuses));
+            
+            Object.keys(userStatuses).forEach(userId => {
+                const status = userStatuses[userId];
+                console.log(`User ${userId}:`, status);
+                
+                const userItem = document.querySelector(`[data-user-id="${userId}"]`);
+                if (userItem) {
+                    const indicator = userItem.querySelector('.status-indicator');
+                    const text = userItem.querySelector('.user-status-text');
+                    console.log(`UI - Indicator: ${indicator?.className}, Text: ${text?.textContent}`);
+                }
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            let content = input.value.trim();
+            
+            if (!content || !selectedUserId) return;
+            
+            content = convertEmojiShortcuts(content);
+            
+            const newMessage = {
+                sender_id: parseInt(currentUserId),
+                receiver_id: selectedUserId,
+                content: content,
+                message_type: 'text',
+                created_at: new Date().toISOString()
+            };
+            displayMessage(newMessage);
+            
+            socket.emit('send_message', {
+                sender_id: parseInt(currentUserId),
+                receiver_id: selectedUserId,
+                content: content,
+                message_type: 'text'
+            });
+            
+            input.value = '';
+        }
+
+        window.testAllFeatures = testAllFeatures;
+        window.testStatus = testStatus;
+        console.log('✅ All features loaded! Try testAllFeatures() or testStatus() in console');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            requestNotificationPermission();
+        });
+
+        document.addEventListener('click', () => {
+            if (!audioInitialized) {
+                initNotificationSound();
+            }
+        }, { once: true });
+
+        // Handle browser close/refresh - cleanup connections
+        window.addEventListener('beforeunload', function() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            if (socket && socket.connected) {
+                socket.disconnect();
+            }
+        });
+
+        loadUsers();
+    </script>
+</body>
+</html>

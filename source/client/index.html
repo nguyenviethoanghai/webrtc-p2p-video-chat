@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #5a6fd8;
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 Chat App</h1>
+        <div class="form-group">
+            <label for="username">Tên người dùng:</label>
+            <input type="text" id="username" placeholder="Nhập tên của bạn...">
+        </div>
+        <button onclick="login()">Đăng nhập / Đăng ký</button>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const errorDiv = document.getElementById('error');
+            
+            if (!username) {
+                errorDiv.textContent = 'Vui lòng nhập tên người dùng';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username }),
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('user_id', data.user_id);
+                    localStorage.setItem('username', data.username);
+                    window.location.href = '/chat';
+                } else {
+                    const usersResponse = await fetch('/api/users');
+                    const users = await usersResponse.json();
+                    const user = users.find(u => u.username === username);
+                    
+                    if (user) {
+                        localStorage.setItem('user_id', user.id);
+                        localStorage.setItem('username', user.username);
+                        window.location.href = '/chat';
+                    } else {
+                        errorDiv.textContent = data.error || 'Có lỗi xảy ra';
+                    }
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+            }
+        }
+
+        document.getElementById('username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
