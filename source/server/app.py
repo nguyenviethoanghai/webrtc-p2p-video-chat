@@ -121,7 +121,7 @@ def register_user():
         if len(password) < 6:
             return jsonify({'error': 'Password must be at least 6 characters'}), 400
         
-        conn = sqlite3.connect('messenger.db')
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         cursor = conn.cursor()
         
         try:
@@ -154,7 +154,7 @@ def login_user():
         if not username or not password:
             return jsonify({'error': 'Username and password required'}), 400
         
-        conn = sqlite3.connect('messenger.db')
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         cursor = conn.cursor()
         
         try:
@@ -177,7 +177,7 @@ def login_user():
 @app.route('/api/users')
 def get_users():
     try:
-        conn = sqlite3.connect('messenger.db')
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute('SELECT id, username FROM users')
         users_data = cursor.fetchall()
@@ -204,7 +204,7 @@ def get_users():
 @app.route('/api/messages/<int:user1_id>/<int:user2_id>')
 def get_messages(user1_id, user2_id):
     try:
-        conn = sqlite3.connect('messenger.db')
+        conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute('''
             SELECT m.id, m.sender_id, m.receiver_id, m.content, m.message_type, 
@@ -327,7 +327,7 @@ def handle_message(data):
     file_path = data.get('file_path')
     
     # Save to database
-    conn = sqlite3.connect('messenger.db')
+    conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO messages (sender_id, receiver_id, content, message_type, file_path)
